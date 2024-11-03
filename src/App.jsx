@@ -1,17 +1,16 @@
 import { useSelector, useDispatch } from 'react-redux';
-import {
-  createAnecdote,
-  voteAnecdote,
-  setAnecdotes,
-  appendAnecdote,
-} from './reducers/anecdoteReducer.js';
+import { voteAnecdote, createAnecdote, makeAVote } from './reducers/anecdoteReducer.js';
 import AnecdoteForm from './components/AnecdoteForm';
 import AnecdoteList from './components/AnecdoteList';
 import Filter from './components/Filter';
 import Notification from './components/Notification';
-import { hideNotification, showNotification } from './reducers/notificationReducer';
+import {
+  hideNotification,
+  setNotification,
+  showNotification,
+} from './reducers/notificationReducer';
 import { useEffect } from 'react';
-import anecdoteServices from './services/anecdotes.js';
+import { initializeAnecdotes } from './reducers/anecdoteReducer.js';
 
 const App = () => {
   const dispatch = useDispatch();
@@ -26,9 +25,13 @@ const App = () => {
     }
   });
 
-  const vote = (id) => {
-    console.log('vote', id);
-    dispatch(voteAnecdote(id));
+  const vote = (anecdote) => {
+    const oneVote = {
+      ...anecdote,
+      votes: anecdote.votes + 1,
+    };
+    console.log('vote', anecdote.id);
+    dispatch(makeAVote(anecdote.id, oneVote));
   };
 
   const create = async (event) => {
@@ -36,17 +39,12 @@ const App = () => {
     const anecdote = event.target.anecdote.value;
     event.target.anecdote.value = '';
 
-    const anecdoteToDb = await anecdoteServices.postAnecdote(anecdote);
-
-    dispatch(appendAnecdote(anecdoteToDb));
-    dispatch(showNotification(anecdoteToDb.content));
-    setTimeout(() => dispatch(hideNotification()), 5000);
+    dispatch(createAnecdote(anecdote));
+    dispatch(setNotification(anecdote, 5000));
   };
 
   useEffect(() => {
-    anecdoteServices.getAllAnecdotes().then((response) => {
-      dispatch(setAnecdotes(response));
-    });
+    dispatch(initializeAnecdotes());
   }, []);
 
   return (
